@@ -32,7 +32,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(h, strconv.FormatInt(crutime, 10))
 		token := fmt.Sprintf("%x", h.Sum(nil))
 
-		t, _ := template.ParseFiles("Web/upload.gtpl")
+		t, _ := template.ParseFiles("Web/upload.html")
 		t.Execute(w, token)
 	} else { //后端POST接收逻辑
 		r.ParseMultipartForm(32 << 20)
