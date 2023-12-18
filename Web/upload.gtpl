@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件上传</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+
+    #upload-container {
+      width: 100%;
+      max-width: 400px;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin-top: 80px; /* 顶栏高度 + 20px 的间距 */
+      text-align: center;
+    }
+
+    #upload-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    #custom-file-input {
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      display: inline-block;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    #custom-file-input:hover {
+      background-color: #45a049;
+    }
+
+    #upload-button {
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 16px;
+    }
+
+    #upload-button:hover {
+      background-color: #45a049;
+    }
+
+    #progress-container {
+      width: 100%;
+      margin-top: 20px;
+      display: none;
+    }
+
+    #progress-bar {
+      width: 0;
+      height: 20px;
+      background-color: #4caf50;
+      border-radius: 4px;
+    }
+
+    #thumbnail-container {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      display: none; /* 默认隐藏 */
+    }
+
+    #thumbnail {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h2>Pixel</h2>
+    <!-- 添加帮助和用户信息的按钮/链接等 -->
+  </header>
+
+  <div id="upload-container">
+    <form id="upload-form">
+      <label id="custom-file-input" for="file-input"><i class="fas fa-upload"></i>选择文件</label>
+      <input type="file" id="file-input" accept="image/*" onchange="displayThumbnail()">
+      <button id="upload-button" type="button" onclick="uploadFile()">上传文件</button>
+    </form>
+
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+
+    <div id="thumbnail-container">
+      <img id="thumbnail" alt="缩略图">
+    </div>
+  </div>
+
+  <script>
+    function uploadFile() {
+      const fileInput = document.getElementById('file-input');
+      const progressBar = document.getElementById('progress-bar');
+      const progressContainer = document.getElementById('progress-container');
+
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('请选择文件');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = function (event) {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          progressBar.style.width = percentComplete + '%';
+        }
+      };
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            alert('文件上传成功！');
+          } else {
+            alert('文件上传失败！');
+          }
+
+          // 重置进度条
+          progressBar.style.width = '0%';
+          // 隐藏进度条
+          progressContainer.style.display = 'none';
+        }
+      };
+
+      // 显示进度条
+      progressContainer.style.display = 'block';
+
+      // 模拟后端接口，你需要将以下URL替换为实际的后端上传接口
+      xhr.open('POST', '/upload', true);
+      xhr.send(formData);
+    }
+
+    function displayThumbnail() {
+      const fileInput = document.getElementById('file-input');
+      const thumbnail = document.getElementById('thumbnail');
+      const thumbnailContainer = document.getElementById('thumbnail-container');
+
+      const file = fileInput.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          thumbnail.src = e.target.result;
+          thumbnailContainer.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        thumbnailContainer.style.display = 'none';
+      }
+    }
+  </script>
+
+</body>
+</html>
