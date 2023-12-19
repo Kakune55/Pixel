@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"html/template"
+	"image"
 	"io"
 	"log"
 	"math/rand"
@@ -14,6 +15,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/disintegration/imaging"
 )
 
 
@@ -62,6 +65,7 @@ func main() {
 	http.HandleFunc("/info", showimg)
 	http.HandleFunc("/upload", upload)
     http.HandleFunc("/img/",downloadHandler)//设置访问的路由
+	http.HandleFunc("/img/mini",displayThumbnailHandler)
 	fmt.Println("Web服务器已启动")      
 	err := http.ListenAndServe(":9090", nil) //设置监听的端口
 	if err != nil {
@@ -184,4 +188,45 @@ func fileSize(file *os.File) int64 {
 		return 0
 	}
 	return stat.Size()
+}
+
+func generateThumbnail(filePath string, width, height int) (*image.NRGBA, error) {
+	// 打开图像文件
+	img, err := imaging.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// 调整图像大小以创建缩略图
+	thumbnail := imaging.Resize(img, width, height, imaging.Lanczos)
+
+	return thumbnail, nil
+}
+
+func displayThumbnailHandler(w http.ResponseWriter, r *http.Request) {
+	// 获取请求参数，例如文件名
+	filename := r.FormValue("id")
+	if filename == "" {
+		http.Error(w, "未提供文件名", http.StatusBadRequest)
+		return
+	}
+
+	// 拼接文件路径，确保路径安全性
+	filePath := filepath.Join("./data/img", database.GetFileName(filename))
+
+	// 生成缩略图
+	thumbnail, err := generateThumbnail(filePath, 128, 0) // 设置缩略图的宽度和高度
+	if err != nil {
+		http.Error(w, "无法生成缩略图", http.StatusInternalServerError)
+		return
+	}
+
+	// 设置响应头，指示这是一张图像
+	w.Header().Set("Content-Type", "image/jpeg") // 使用 JPEG 格式或根据需要调整
+
+	// 将缩略图写入响应体
+	if err := imaging.Encode(w, thumbnail, imaging.JPEG); err != nil {
+		http.Error(w, "无法编码图像", http.StatusInternalServerError)
+		return
+	}
 }
