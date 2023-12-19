@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,7 +37,8 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      margin-top: 80px; /* 顶栏高度 + 20px 的间距 */
+      margin-top: 80px;
+      /* 顶栏高度 + 20px 的间距 */
       text-align: center;
     }
 
@@ -54,7 +56,6 @@
       background-color: #4caf50;
       color: #fff;
       border: none;
-      padding: 10px;
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s;
@@ -71,7 +72,6 @@
       background-color: #4caf50;
       color: #fff;
       border: none;
-      padding: 10px;
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.3s;
@@ -99,7 +99,8 @@
       margin-top: 20px;
       max-width: 100%;
       height: auto;
-      display: none; /* 默认隐藏 */
+      display: none;
+      /* 默认隐藏 */
     }
 
     #thumbnail {
@@ -108,6 +109,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <header>
@@ -158,7 +160,8 @@
       xhr.onreadystatechange = function () {
         if (xhr.readyState === XMLHttpRequest.DONE) {
           if (xhr.status === 200) {
-            alert('文件上传成功！');
+            gourl = "info?id=" + xhr.responseText
+            window.location.href = gourl
           } else {
             alert('文件上传失败！');
           }
@@ -198,4 +201,5 @@
   </script>
 
 </body>
+
 </html>

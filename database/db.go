@@ -18,7 +18,8 @@ func Initdb() {
 	createTableSQL := `
 	CREATE TABLE IF NOT EXISTS mytable (
 		link TEXT PRIMARY KEY,
-		md5 TEXT NOT NULL
+		md5 TEXT NOT NULL,
+		ext TEXT NOT NULL
 	);
 	`
 
@@ -28,7 +29,7 @@ func Initdb() {
 	}
 }
 
-func NewFile(linkID string, md5 string) {
+func NewFile(linkID string, md5 string, ext string) {
 	db, err := sql.Open("sqlite3", "./data/database.db")
 	if err != nil {
 		log.Fatal(err)
@@ -37,7 +38,7 @@ func NewFile(linkID string, md5 string) {
 
 	// SQL语句
 	SQL := `
-	INSERT INTO "main"."mytable" ("link", "md5") VALUES (?, ?)
+	INSERT INTO "main"."mytable" ("link", "md5" ,"ext") VALUES (?, ? , ?)
 	`
 
 	stmt, err := db.Prepare(SQL)
@@ -45,13 +46,13 @@ func NewFile(linkID string, md5 string) {
 		log.Fatal(err)
 	}
 
- 	_, err = stmt.Exec(linkID,md5) //插入记录
+ 	_, err = stmt.Exec(linkID,md5,ext) //插入记录
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func GetFileInfo(linkID string) string {
+func GetFileName(linkID string) string {
 	db, err := sql.Open("sqlite3", "./data/database.db")
 	if err != nil {
 		log.Fatal(err)
@@ -71,7 +72,8 @@ func GetFileInfo(linkID string) string {
 	// 扫描查询结果
 	var md5 string
 	var linkIDx string
-	err = row.Scan(&linkIDx,&md5)
+	var ext string
+	err = row.Scan(&linkIDx,&md5,&ext)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return ""
@@ -80,5 +82,5 @@ func GetFileInfo(linkID string) string {
 		}
 		return ""
 	}
-	return md5
+	return md5+ext
 }
