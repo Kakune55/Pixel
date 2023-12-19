@@ -3,6 +3,7 @@ package main
 import (
 	"Pixel/database"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"image"
@@ -63,9 +64,11 @@ func init() {
 
 func main() {
 	http.HandleFunc("/info", showimg)
+	http.HandleFunc("/info/list", showlist)
 	http.HandleFunc("/upload", upload)
     http.HandleFunc("/img/",downloadHandler)//设置访问的路由
 	http.HandleFunc("/img/mini",displayThumbnailHandler)
+	http.HandleFunc("/idlist",arrayHandler)
 	fmt.Println("Web服务器已启动")      
 	err := http.ListenAndServe(":9090", nil) //设置监听的端口
 	if err != nil {
@@ -75,6 +78,11 @@ func main() {
 
 func showimg(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("Web/info.html")
+	t.Execute(w, "Hello")
+}
+
+func showlist(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("Web/list.html")
 	t.Execute(w, "Hello")
 }
 
@@ -229,4 +237,25 @@ func displayThumbnailHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "无法编码图像", http.StatusInternalServerError)
 		return
 	}
+}
+
+func arrayHandler(w http.ResponseWriter, r *http.Request) {
+	// 获取数组数据
+	data, err := database.QueryId()
+	if err != nil {
+		http.Error(w, "数组数据获取失败", http.StatusInternalServerError)
+		return
+	}
+	// 将数组数据转换为 JSON 格式
+	responseData, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, "无法处理数组数据", http.StatusInternalServerError)
+		return
+	}
+
+	// 设置响应头，指定内容类型为 JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// 将 JSON 数据写入响应体
+	w.Write(responseData)
 }

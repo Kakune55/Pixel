@@ -84,3 +84,33 @@ func GetFileName(linkID string) string {
 	}
 	return md5+ext
 }
+
+func QueryId() ([]string, error) {
+	var result []string
+
+	db, err := sql.Open("sqlite3", "./data/database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT link FROM mytable")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		result = append(result, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}

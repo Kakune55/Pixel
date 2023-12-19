@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 20px;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      gap: 20px; /* 左右留出的空白 */
+    }
+
+    .gallery-item {
+      width: calc(20% - 20px); /* 五张图片占据的宽度 */
+      margin-bottom: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #fff;
+      transition: transform 0.3s ease-in-out;
+      cursor: pointer;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+    }
+
+    .gallery img {
+      width: 100%;
+      height: auto;
+      border-bottom: 1px solid #ddd;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .info-box {
+      padding: 10px;
+      text-align: center;
+    }
+  </style>
+  <title>图片展示页</title>
+</head>
+<body>
+  <div class="gallery" id="gallery">
+    <!-- 图片将通过JavaScript动态添加到这里 -->
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Ajax请求从服务器获取图片ID数组
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", "/idlist", true);
+
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          const imageIds = JSON.parse(xhr.responseText);
+          displayImages(imageIds);
+        }
+      };
+
+      xhr.send();
+
+      function displayImages(imageIds) {
+        const gallery = document.getElementById("gallery");
+
+        // 动态添加图片和信息到展示页
+        imageIds.forEach(function(id) {
+          const galleryItem = document.createElement("div");
+          galleryItem.classList.add("gallery-item");
+
+          const img = document.createElement("img");
+          img.src = `/img/mini?id=${id}`;
+
+          const infoBox = document.createElement("div");
+          infoBox.classList.add("info-box");
+          infoBox.innerText = `ID: ${id}`;
+
+          // 点击事件，跳转到对应链接
+          galleryItem.addEventListener("click", function() {
+            window.location.href = `/info?id=${id}`;
+          });
+
+          galleryItem.appendChild(img);
+          galleryItem.appendChild(infoBox);
+          gallery.appendChild(galleryItem);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
