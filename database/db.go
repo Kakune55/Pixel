@@ -21,6 +21,10 @@ func Initdb() {
 		md5 TEXT NOT NULL,
 		ext TEXT NOT NULL
 	);
+	CREATE TABLE IF NOT EXISTS user (
+		uname TEXT PRIMARY KEY,
+		password TEXT NOT NULL
+	);
 	`
 
 	_, err = db.Exec(createTableSQL)
@@ -113,4 +117,103 @@ func QueryId() ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func DelFile(linkID string) {
+	db, err := sql.Open("sqlite3", "./data/database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// SQL语句
+	SQL := `
+	DELETE FROM "mytable" WHERE link = ?
+	`
+
+	stmt, err := db.Prepare(SQL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+ 	_, err = stmt.Exec(linkID) //插入记录
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func NewUser(uname string, password string) {
+	db, err := sql.Open("sqlite3", "./data/database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// SQL语句
+	SQL := `
+	INSERT INTO "user" ("uname" ,"password") VALUES (? , ?)
+	`
+
+	stmt, err := db.Prepare(SQL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+ 	_, err = stmt.Exec(uname, password) //插入记录
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func QueryUser() ([]string, error) {
+	var result []string
+
+	db, err := sql.Open("sqlite3", "./data/database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	rows, err := db.Query("SELECT uname FROM user")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		result = append(result, name)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func CheckUserPasswd(username string, password string) bool {
+	// 连接到SQLite数据库
+	db, err := sql.Open("sqlite3", "./data/database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+	// 查询用户名和密码
+	const sqlStr = "SELECT * FROM 'user' WHERE uname=? AND password=?"
+	// 执行查询
+	rows, err := db.Query(sqlStr, username, password)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	// 判断查询结果
+	if rows.Next() {
+		return true
+	} else {
+		return false
+	}
 }

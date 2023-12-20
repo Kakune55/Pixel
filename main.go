@@ -64,11 +64,13 @@ func init() {
 
 func main() {
 	http.HandleFunc("/info", showimg)
-	http.HandleFunc("/info/list", showlist)
-	http.HandleFunc("/upload", upload)
-    http.HandleFunc("/img/",downloadHandler)//设置访问的路由
-	http.HandleFunc("/img/mini",displayThumbnailHandler)
-	http.HandleFunc("/idlist",arrayHandler)
+	http.HandleFunc("/info/list", showlist)//
+	http.HandleFunc("/upload", upload)//上传图片
+    http.HandleFunc("/img/",downloadHandler)//图片接口
+	http.HandleFunc("/img/mini",displayThumbnailHandler)//缩略图接口
+	http.HandleFunc("/idlist",arrayHandler)//获取现有图片id
+	http.HandleFunc("/img/del",deleteImagesHandler)//删除相应图片
+	http.HandleFunc("/login",login)//登录页
 	fmt.Println("Web服务器已启动")      
 	err := http.ListenAndServe(":9090", nil) //设置监听的端口
 	if err != nil {
@@ -82,6 +84,13 @@ func showimg(w http.ResponseWriter, r *http.Request) {
 }
 
 func showlist(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("login")
+	if cookie == nil{ //未授权禁止访问
+		w.WriteHeader(401)
+		w.Write([]byte(`<html><a href="/login">验证失败 点此登录</a><html>`))
+		return
+	}
+
 	t, _ := template.ParseFiles("Web/list.html")
 	t.Execute(w, "Hello")
 }
@@ -239,7 +248,13 @@ func displayThumbnailHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func arrayHandler(w http.ResponseWriter, r *http.Request) {
+func arrayHandler(w http.ResponseWriter, r *http.Request) {  //获取全部图片ID
+	cookie, _ := r.Cookie("login")
+	if cookie == nil{ //未授权禁止访问
+		w.WriteHeader(401)
+		w.Write([]byte(`<html><a href="/login">验证失败 点此登录</a><html>`))
+		return
+	}
 	// 获取数组数据
 	data, err := database.QueryId()
 	if err != nil {
@@ -258,4 +273,60 @@ func arrayHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 将 JSON 数据写入响应体
 	w.Write(responseData)
+}
+
+func deleteImagesHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("login")
+	if cookie == nil{ //未授权禁止访问
+		w.WriteHeader(401)
+		w.Write([]byte(`<html><a href="/login">验证失败 点此登录</a><html>`))
+		return
+	}
+	// 从请求参数中获取目录名
+	id := r.FormValue("id")
+
+	if id == "" {
+		http.Error(w, "未提供id", http.StatusBadRequest)
+		return
+	}
+
+	// 拼接目录路径，确保路径安全性
+	dirPath := filepath.Join("./data/img/", database.GetFileName(id))
+
+	// 删除目录及其所有内容
+	if err := os.Remove(dirPath); err != nil {
+		http.Error(w, fmt.Sprintf("无法删除 %s: %s", database.GetFileName(id), err), http.StatusInternalServerError)
+		return
+	}
+
+	database.DelFile(id) //删除数据库相关记录
+
+	// 返回成功的响应
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("成功删除"))
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	if r.Method == "GET" {
+		t, _ := template.ParseFiles("Web/login.html")
+		w.Header().Set("Content-Type", "text/html")
+		t.Execute(w,"")
+	} else {
+		userlist,_:= database.QueryUser()
+		fmt.Println(userlist)
+		if len(userlist) == 0 {
+			database.NewUser("admin", r.FormValue("passwd"))
+		} else {
+			if !database.CheckUserPasswd("admin", r.FormValue("passwd")) {
+				http.Redirect(w, r, "/login",http.StatusFound)
+				fmt.Println("密码错误")
+				return
+			}
+		}
+		cookie := http.Cookie{Name: "login", Value: "yes"}
+		http.SetCookie(w, &cookie)
+		fmt.Println("密码正确")
+		http.Redirect(w, r, "/info/list",http.StatusFound)
+	}
 }
