@@ -70,6 +70,30 @@
     #imgshow {
       width: 100%;
     }
+
+    #delete-button {
+      background-color: #ff4444;
+      /* 红色背景 */
+      border: none;
+      color: white;
+      /* 白色文字 */
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      /* 圆角边框 */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      /* 阴影效果 */
+    }
+
+    #delete-button:hover {
+      background-color: #ff0000;
+      /* 鼠标悬停时颜色加深 */
+    }
   </style>
 </head>
 
@@ -100,11 +124,12 @@
             </td>
           </tr>
           <tr>
-            <td>HTML</td>
+            <td>BBCode</td>
             <td>[img]<span class="imgurl"></span>[/img]
             </td>
           </tr>
         </table>
+        <button id="delete-button" onclick="DelImg(linkid)">Del</button>
       </div>
     </div>
   </div>
@@ -130,6 +155,48 @@
     var elements = document.getElementsByClassName("imgurl"); // 获取所有具有类名 "myClass" 的元素
     for (var i = 0; i < elements.length; i++) {
       elements[i].innerHTML = imgurl;
+    }
+
+    function DelImg(fileID) {
+      // 弹出确认框，询问是否要删除图片
+      var userConfirmation = confirm("是否要删除此图片？");
+
+      if (userConfirmation) {
+        // 如果用户确认删除，则请求输入文件ID
+        var userInput = prompt("请确认文件ID：");
+
+        // 验证输入的文件ID是否与传入的文件ID匹配
+        if (userInput === fileID) {
+          // 如果验证成功，则调用URL删除图片
+          var deleteURL = "/img/del?id=" + fileID;
+
+          // 使用XMLHttpRequest发送DELETE请求
+          var xhr = new XMLHttpRequest();
+          xhr.open("DELETE", deleteURL, true);
+
+          xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4) {
+              if (xhr.status == 200) {
+                // 删除成功
+                alert("图片删除成功")
+                window.location.href="/upload"
+              } else {
+                // 删除失败
+                alert("删除图片失败：" + xhr.statusText);
+              }
+            }
+          };
+
+          // 发送请求
+          xhr.send();
+        } else {
+          // 如果验证失败，则取消操作
+          alert("文件ID验证失败，操作已取消。");
+        }
+      } else {
+        // 如果用户取消删除，则取消操作
+        alert("操作已取消。");
+      }
     }
   </script>
 
