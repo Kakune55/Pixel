@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Pixel/config"
 	"Pixel/database"
 	"crypto/md5"
 	"encoding/json"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/disintegration/imaging"
 )
-
 
 func init() {
 	const appinfo string = `
@@ -61,18 +61,24 @@ func init() {
 	fmt.Println("数据库初始化完成")
 }
 
-
 func main() {
+	filePath := "user.json"
+		// 读取配置文件
+	config, err := config.ReadConfig(filePath)
+	if err != nil {
+		fmt.Println("读取配置文件失败：", err)
+	}
+
 	http.HandleFunc("/info", showimg)
-	http.HandleFunc("/info/list", showlist)//
-	http.HandleFunc("/upload", upload)//上传图片
-    http.HandleFunc("/img/",downloadHandler)//图片接口
-	http.HandleFunc("/img/mini",displayThumbnailHandler)//缩略图接口
-	http.HandleFunc("/idlist",arrayHandler)//获取现有图片id
-	http.HandleFunc("/img/del",deleteImagesHandler)//删除相应图片
-	http.HandleFunc("/login",login)//登录页
-	fmt.Println("Web服务器已启动")      
-	err := http.ListenAndServe(":9090", nil) //设置监听的端口
+	http.HandleFunc("/info/list", showlist)               //
+	http.HandleFunc("/upload", upload)                    //上传图片
+	http.HandleFunc("/img/", downloadHandler)             //图片接口
+	http.HandleFunc("/img/mini", displayThumbnailHandler) //缩略图接口
+	http.HandleFunc("/idlist", arrayHandler)              //获取现有图片id
+	http.HandleFunc("/img/del", deleteImagesHandler)      //删除相应图片
+	http.HandleFunc("/login", login)                      //登录页
+	fmt.Println("Web服务器已启动")
+	err = http.ListenAndServe(config.Listen, nil) //设置监听的端口
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
@@ -85,7 +91,7 @@ func showimg(w http.ResponseWriter, r *http.Request) {
 
 func showlist(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("login")
-	if cookie == nil{ //未授权禁止访问
+	if cookie == nil { //未授权禁止访问
 		w.WriteHeader(401)
 		w.Write([]byte(`<html><a href="/login">验证失败 点此登录</a><html>`))
 		return
@@ -95,64 +101,62 @@ func showlist(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, "Hello")
 }
 
-
 // 处理/upload 逻辑
 func upload(w http.ResponseWriter, r *http.Request) {
-    fmt.Println("method:", r.Method) // 获取请求的方法
+	fmt.Println("method:", r.Method) // 获取请求的方法
 
-    if r.Method == "GET" { // 前端页面渲染
-        crutime := time.Now().Unix()
-        h := md5.New()
-        io.WriteString(h, strconv.FormatInt(crutime, 10))
-        token := fmt.Sprintf("%x", h.Sum(nil))
+	if r.Method == "GET" { // 前端页面渲染
+		crutime := time.Now().Unix()
+		h := md5.New()
+		io.WriteString(h, strconv.FormatInt(crutime, 10))
+		token := fmt.Sprintf("%x", h.Sum(nil))
 
-        t, _ := template.ParseFiles("Web/upload.html")
-        t.Execute(w, token)
-    } else { // 后端POST接收逻辑
-        r.ParseMultipartForm(32 << 20)
-        file, handler, err := r.FormFile("file")
-        if err != nil {
-            fmt.Println(err)
-            return
-        }
-        defer file.Close()
+		t, _ := template.ParseFiles("Web/upload.html")
+		t.Execute(w, token)
+	} else { // 后端POST接收逻辑
+		r.ParseMultipartForm(32 << 20)
+		file, handler, err := r.FormFile("file")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer file.Close()
 
-        // 生成文件的MD5哈希
-        h := md5.New()
-        if _, err := io.Copy(h, file); err != nil {
-            fmt.Println(err)
-            return
-        }
-        md5sum := fmt.Sprintf("%x", h.Sum(nil))
+		// 生成文件的MD5哈希
+		h := md5.New()
+		if _, err := io.Copy(h, file); err != nil {
+			fmt.Println(err)
+			return
+		}
+		md5sum := fmt.Sprintf("%x", h.Sum(nil))
 
-        // 获取文件扩展名
+		// 获取文件扩展名
 		fname := handler.Filename
-        ext := path.Ext(fname)
+		ext := path.Ext(fname)
 
-        // 创建新文件，使用MD5哈希和原始扩展名
-        newFilename := md5sum + ext
-        f, err := os.OpenFile("./data/img/"+newFilename, os.O_WRONLY|os.O_CREATE, 0666)
-        if err != nil {
-            fmt.Println(err)
-            return
-        }
-        defer f.Close()
+		// 创建新文件，使用MD5哈希和原始扩展名
+		newFilename := md5sum + ext
+		f, err := os.OpenFile("./data/img/"+newFilename, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer f.Close()
 
-        // 将文件内容拷贝到新文件
-        _, err = file.Seek(0, 0)
-        if err != nil {
-            fmt.Println(err)
-            return
-        }
-        io.Copy(f, file)
+		// 将文件内容拷贝到新文件
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		io.Copy(f, file)
 
-        // 存入数据库
+		// 存入数据库
 		var linkid = RandomString(10)
-		database.NewFile(linkid,md5sum,ext)
+		database.NewFile(linkid, md5sum, ext)
 		w.Write([]byte(linkid))
-    }
+	}
 }
-
 
 func RandomString(n int) string {
 	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -248,9 +252,9 @@ func displayThumbnailHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func arrayHandler(w http.ResponseWriter, r *http.Request) {  //获取全部图片ID
+func arrayHandler(w http.ResponseWriter, r *http.Request) { //获取全部图片ID
 	cookie, _ := r.Cookie("login")
-	if cookie == nil{ //未授权禁止访问
+	if cookie == nil { //未授权禁止访问
 		w.WriteHeader(401)
 		w.Write([]byte(`<html><a href="/login">验证失败 点此登录</a><html>`))
 		return
@@ -277,7 +281,7 @@ func arrayHandler(w http.ResponseWriter, r *http.Request) {  //获取全部图�
 
 func deleteImagesHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, _ := r.Cookie("login")
-	if cookie == nil{ //未授权禁止访问
+	if cookie == nil { //未授权禁止访问
 		w.WriteHeader(401)
 		w.Write([]byte(`<html><a href="/login">验证失败 点此登录</a><html>`))
 		return
@@ -311,15 +315,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("Web/login.html")
 		w.Header().Set("Content-Type", "text/html")
-		t.Execute(w,"")
+		t.Execute(w, "")
 	} else {
-		userlist,_:= database.QueryUser()
+		userlist, _ := database.QueryUser()
 		fmt.Println(userlist)
 		if len(userlist) == 0 {
 			database.NewUser("admin", r.FormValue("passwd"))
 		} else {
 			if !database.CheckUserPasswd("admin", r.FormValue("passwd")) {
-				http.Redirect(w, r, "/login",http.StatusFound)
+				http.Redirect(w, r, "/login", http.StatusFound)
 				fmt.Println("密码错误")
 				return
 			}
@@ -327,6 +331,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 		cookie := http.Cookie{Name: "login", Value: "yes"}
 		http.SetCookie(w, &cookie)
 		fmt.Println("密码正确")
-		http.Redirect(w, r, "/info/list",http.StatusFound)
+		http.Redirect(w, r, "/info/list", http.StatusFound)
 	}
 }
