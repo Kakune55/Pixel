@@ -227,6 +227,13 @@ func generateThumbnail(filePath string, width, height int) (*image.NRGBA, error)
 func displayThumbnailHandler(w http.ResponseWriter, r *http.Request) {
 	// 获取请求参数，例如文件名
 	filename := r.FormValue("id")
+	imgsize, err := strconv.Atoi(r.FormValue("size"))
+	if err != nil {
+        http.Error(w, "size参数错误 应为纯数字", http.StatusBadRequest)
+    }
+	if imgsize <= 1 || imgsize > 1024 {
+        http.Error(w, "size参数错误 范围应在0-1024之间", http.StatusBadRequest)
+    }
 	if filename == "" {
 		http.Error(w, "未提供文件名", http.StatusBadRequest)
 		return
@@ -236,7 +243,7 @@ func displayThumbnailHandler(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join("./data/img", database.GetFileName(filename))
 
 	// 生成缩略图
-	thumbnail, err := generateThumbnail(filePath, 128, 0) // 设置缩略图的宽度和高度
+	thumbnail, err := generateThumbnail(filePath, imgsize, 0) // 设置缩略图的宽度和高度
 	if err != nil {
 		http.Error(w, "无法生成缩略图", http.StatusInternalServerError)
 		return

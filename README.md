@@ -17,11 +17,18 @@
 - /idlist 列出所有图片id
 
 ## 部分接口文档
-### `/img` `/img/mini` `/del` `/info`
+### `/img` `/del` `/info`
 #### 请求方式
 Get  
 #### 请求参数
 id 图片id
+
+### `/img/mini`
+#### 请求方式
+Get  
+#### 请求参数
+id 图片id
+size 图片横向大小 单位像素 0-1024
 
 ## 使用的外部库
 "github.com/disintegration/imaging" MIT LICENSE
