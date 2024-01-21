@@ -217,3 +217,36 @@ func CheckUserPasswd(username string, password string) bool {
 		return false
 	}
 }
+
+func GetFileLinkID(md5in string) string {
+	db, err := sql.Open("sqlite3", "./data/database.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// SQL语句
+	SQL := `
+	SELECT * FROM "mytable" WHERE md5 = ?
+	`
+
+	row := db.QueryRow(SQL,md5in)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 扫描查询结果
+	var md5 string
+	var linkID string
+	var ext string
+	err = row.Scan(&linkID,&md5,&ext)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return ""
+		} else {
+			log.Fatal(err)
+		}
+		return ""
+	}
+	return linkID
+}
