@@ -130,6 +130,12 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		}
 		md5sum := fmt.Sprintf("%x", h.Sum(nil))
 
+		oldLinkID := database.GetFileLinkID(md5sum)
+		if oldLinkID != "" {
+			w.Write([]byte(oldLinkID))
+			return
+		}
+
 		// 获取文件扩展名
 		fname := handler.Filename
 		ext := path.Ext(fname)
